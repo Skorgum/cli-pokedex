@@ -1,0 +1,34 @@
+# Binaries for programs and plugins
+*.exe
+*.dll
+*.so
+*.dylib
+
+# Test binary, generated with `go test -c`
+*.test
+
+# Output of the go coverage tool, specifically when using go test -coverprofile
+*.out
+
+# Dependency directories (remove the comment and un-comment to enable)
+# vendor/
+
+# Go module cache (usually in GOPATH/pkg/mod)
+# This is usually managed by Go itself, but good to be aware of
+# if you're not using modules, or have specific needs.
+# However, if you're using Go Modules (which you are!),
+# you typically *do* commit `go.mod` and `go.sum`.
+
+# VS Code specific files
+.vscode/
+
+# IDE-specific files (e.g., from GoLand, other JetBrains IDEs)
+.idea/
+*.iml
+
+# OS generated files
+.DS_Store
+Thumbs.db
+
+# My build executable (replace with your actual executable name)
+cli-pokedex
