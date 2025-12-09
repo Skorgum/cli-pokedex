@@ -4,6 +4,9 @@
 *.so
 *.dylib
 
+# log files
+*.log
+
 # Test binary, generated with `go test -c`
 *.test
 
