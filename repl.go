@@ -63,6 +63,11 @@ func init() {
 			description: "Inspect indicated Pokémon",
 			callback:    commandInspect,
 		},
+		"pokedex": {
+			name:        "pokedex",
+			description: "List caught Pokémon",
+			callback:    commandPokedex,
+		},
 	}
 }
 
@@ -113,7 +118,7 @@ func commandHelp(cfg *config, args ...string) error {
 	fmt.Println("Usage:")
 	fmt.Println()
 
-	order := []string{"help", "exit", "map", "mapb", "explore", "catch", "inspect"}
+	order := []string{"help", "exit", "map", "mapb", "explore", "catch", "inspect", "pokedex"}
 
 	for _, name := range order {
 		cmd := commands[name]
@@ -223,7 +228,7 @@ func commandInspect(cfg *config, args ...string) error {
 
 	p, ok := cfg.Pokedex[pokemonName]
 	if !ok {
-		fmt.Println("you have not caught that pokemon")
+		fmt.Println("you have not caught that Pokémon")
 		return nil
 	}
 	fmt.Printf("Name: %s\n", p.Name)
@@ -240,5 +245,18 @@ func commandInspect(cfg *config, args ...string) error {
 		fmt.Printf("  - %s\n", t.Type.Name)
 	}
 
+	return nil
+}
+
+func commandPokedex(cfg *config, args ...string) error {
+	if len(cfg.Pokedex) == 0 {
+		fmt.Println("You have not caught any Pokémon yet")
+		return nil
+	}
+
+	fmt.Println("Your Pokedex: ")
+	for p := range cfg.Pokedex {
+		fmt.Printf("- %s\n", p)
+	}
 	return nil
 }
