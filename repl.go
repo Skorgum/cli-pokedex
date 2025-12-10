@@ -29,30 +29,34 @@ func startRepl() {
 			continue
 		}
 		cmdName := words[0]
+		args := []string{}
+		if len(words) > 1 {
+			args = words[1:]
+		}
 		cmd, ok := commands[cmdName]
 		if !ok {
 			fmt.Printf("Unknown command: %s\n", cmdName)
 			continue
 		}
-		err := cmd.callback(cfg)
+		err := cmd.callback(cfg, args...)
 		if err != nil {
 			fmt.Printf("Error executing command %s: %s\n", cmdName, err)
 			continue
 		}
 	}
 }
-func commandExit(cfg *config) error {
+func commandExit(cfg *config, args ...string) error {
 	fmt.Print("Closing the Pokedex... Goodbye!\n")
 	os.Exit(0)
 	return nil
 }
 
-func commandHelp(cfg *config) error {
+func commandHelp(cfg *config, args ...string) error {
 	fmt.Println("Welcome to the Pokedex!")
 	fmt.Println("Usage:")
 	fmt.Println()
 
-	order := []string{"help", "exit", "map", "mapb"}
+	order := []string{"help", "exit", "map", "mapb", "explore"}
 
 	for _, name := range order {
 		cmd := commands[name]
@@ -61,7 +65,7 @@ func commandHelp(cfg *config) error {
 	return nil
 }
 
-func commandMap(cfg *config) error {
+func commandMap(cfg *config, args ...string) error {
 	res, err := cfg.PokeClient.ListLocations(cfg.Next)
 	if err != nil {
 		return err
@@ -77,7 +81,7 @@ func commandMap(cfg *config) error {
 	return nil
 }
 
-func commandMapB(cfg *config) error {
+func commandMapB(cfg *config, args ...string) error {
 	if cfg.Previous == nil {
 		fmt.Println("You're on the first page")
 		return nil
@@ -97,6 +101,26 @@ func commandMapB(cfg *config) error {
 	return nil
 }
 
+func commandExplore(cfg *config, args ...string) error {
+	if len(args) == 0 {
+		return fmt.Errorf("Please specify an area")
+	}
+
+	locationName := args[0]
+	fmt.Printf("Exploring %s...\n", locationName)
+
+	loc, err := cfg.PokeClient.GetLocation(locationName)
+	if err != nil {
+		return err
+	}
+
+	fmt.Println("Found Pokémon:")
+	for _, encounter := range loc.PokemonEncounters {
+		fmt.Printf(" - %s\n", encounter.Pokemon.Name)
+	}
+	return nil
+}
+
 type config struct {
 	Next       *string
 	Previous   *string
@@ -106,7 +130,7 @@ type config struct {
 type cliCommand struct {
 	name        string
 	description string
-	callback    func(*config) error
+	callback    func(*config, ...string) error
 }
 
 var commands map[string]cliCommand
@@ -132,6 +156,11 @@ func init() {
 			name:        "mapb",
 			description: "Displays the previous 20 locations",
 			callback:    commandMapB,
+		},
+		"explore": {
+			name:        "explore",
+			description: "Explore a location area to find Pokémon",
+			callback:    commandExplore,
 		},
 	}
 }
