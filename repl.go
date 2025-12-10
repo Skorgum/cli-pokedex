@@ -3,12 +3,63 @@ package main
 import (
 	"bufio"
 	"fmt"
+	"math/rand"
 	"os"
 	"strings"
 	"time"
 
 	"github.com/Skorgum/cli-pokedex/internal/pokeapi"
 )
+
+type config struct {
+	Next       *string
+	Previous   *string
+	PokeClient pokeapi.Client
+	Pokedex    map[string]pokeapi.Pokemon
+}
+
+type cliCommand struct {
+	name        string
+	description string
+	callback    func(*config, ...string) error
+}
+
+var commands map[string]cliCommand
+
+func init() {
+	commands = map[string]cliCommand{
+		"exit": {
+			name:        "exit",
+			description: "Exit the Pokedex",
+			callback:    commandExit,
+		},
+		"help": {
+			name:        "help",
+			description: "Displays a help message",
+			callback:    commandHelp,
+		},
+		"map": {
+			name:        "map",
+			description: "Displays 20 locations. Subsequent call displays the next 20, and so on",
+			callback:    commandMap,
+		},
+		"mapb": {
+			name:        "mapb",
+			description: "Displays the previous 20 locations",
+			callback:    commandMapB,
+		},
+		"explore": {
+			name:        "explore",
+			description: "Explore a location area to find Pokémon",
+			callback:    commandExplore,
+		},
+		"catch": {
+			name:        "catch",
+			description: "Attempt to catch indicated Pokémon",
+			callback:    commandCatch,
+		},
+	}
+}
 
 func cleanInput(text string) []string {
 	lower := strings.ToLower(text)
@@ -19,6 +70,7 @@ func startRepl() {
 	scanner := bufio.NewScanner(os.Stdin)
 	cfg := &config{
 		PokeClient: pokeapi.NewClient(5 * time.Second),
+		Pokedex:    make(map[string]pokeapi.Pokemon),
 	}
 	for {
 		fmt.Print("Pokedex > ")
@@ -103,7 +155,7 @@ func commandMapB(cfg *config, args ...string) error {
 
 func commandExplore(cfg *config, args ...string) error {
 	if len(args) == 0 {
-		return fmt.Errorf("Please specify an area")
+		return fmt.Errorf("please specify an area")
 	}
 
 	locationName := args[0]
@@ -121,46 +173,38 @@ func commandExplore(cfg *config, args ...string) error {
 	return nil
 }
 
-type config struct {
-	Next       *string
-	Previous   *string
-	PokeClient pokeapi.Client
-}
-
-type cliCommand struct {
-	name        string
-	description string
-	callback    func(*config, ...string) error
-}
-
-var commands map[string]cliCommand
-
-func init() {
-	commands = map[string]cliCommand{
-		"exit": {
-			name:        "exit",
-			description: "Exit the Pokedex",
-			callback:    commandExit,
-		},
-		"help": {
-			name:        "help",
-			description: "Displays a help message",
-			callback:    commandHelp,
-		},
-		"map": {
-			name:        "map",
-			description: "Displays 20 locations. Subsequent call displays the next 20, and so on",
-			callback:    commandMap,
-		},
-		"mapb": {
-			name:        "mapb",
-			description: "Displays the previous 20 locations",
-			callback:    commandMapB,
-		},
-		"explore": {
-			name:        "explore",
-			description: "Explore a location area to find Pokémon",
-			callback:    commandExplore,
-		},
+func commandCatch(cfg *config, args ...string) error {
+	if len(args) == 0 {
+		return fmt.Errorf("please specify a Pokémon")
 	}
+
+	pokemonName := args[0]
+	fmt.Printf("Throwing a Pokeball at %s...\n", pokemonName)
+
+	pokemonData, err := cfg.PokeClient.GetPokemon(pokemonName)
+	if err != nil {
+		return err
+	}
+
+	baseExp := pokemonData.BaseExperience
+
+	var catchChance int
+	switch {
+	case baseExp >= 300:
+		catchChance = 25
+	case baseExp >= 100:
+		catchChance = 50
+	default:
+		catchChance = 75
+	}
+
+	roll := rand.Intn(100)
+	if roll < catchChance {
+		fmt.Printf("%s was caught!\n", pokemonName)
+		cfg.Pokedex[pokemonName] = pokemonData
+	} else {
+		fmt.Printf("%s escaped!\n", pokemonName)
+	}
+
+	return nil
 }
